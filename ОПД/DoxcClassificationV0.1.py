@@ -6,7 +6,7 @@ import pdfplumber
 import docx
 from docx import Document
 import requests
-
+import re
 
 from google.colab import drive
 drive.mount('/content/drive', force_remount=True)
@@ -27,9 +27,7 @@ def YaGPT(input_str):
               "text": text
           }
       ]
-      
   }
-
 
   url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
   headers = {
@@ -37,11 +35,9 @@ def YaGPT(input_str):
       "Authorization": "Api-Key AQVN36QRntV3Gys6tAvWaL1nEZeEYkCkW2hsYdqV"
   }
 
-
   response = requests.post(url, headers=headers, json=prompt)
 
   result = response.text
-  #print(result)
   result = result.replace('{"result":{"alternatives":[{"message":{"role":"assistant","text":"','')
   result = result[:-156]
   return result
@@ -51,13 +47,31 @@ def YaGPT(input_str):
 def find_bold_and_underline_text(docx_file):
   doc = docx.Document(docx_file)
   find_text = []
-
   for paragraph in doc.paragraphs:
+      # Разделяем абзац на предложения
+      sentences = paragraph.text.split(".")
+
+      # Перебираем предложения
+      for sentence in sentences:
+          # Находим предложения с символами : или -
+          if ":" in sentence or "-" in sentence:
+              # Извлекаем текст перед символами : или -
+              text_before = sentence.split("[:-]")[0]
+
+              # Удаляем пробелы в начале и конце текста
+              find_text.append(text_before.strip())
+
+
+  # Найти жирный и подчёркнутый текст
+  for paragraph in doc.paragraphs:
+
       for run in paragraph.runs:
-          if run.bold or run.underline:
-              find_text.append(run.text)
-          #if run.underline:
-              #underline_text.append(run.text)
+
+        if run.bold or run.underline:
+            find_text.append(run.text)
+
+
+
 
   return find_text
 
@@ -69,6 +83,7 @@ def find_and_extract_text(docx_file, search_word):
     extracted_texts = []
 
     for paragraph in doc.paragraphs:
+
         if search_word in paragraph.text:
             # Найти индекс слова в абзаце
             index = paragraph.text.find(search_word)
@@ -142,8 +157,10 @@ while True:
             print(resulting_text)
           else:
             print("Тема не найдена")
-    
+
 
   else:
     print("Файл не существует.")
-#file = "/content/drive/My Drive/lecture_1_3.docx"
+
+#/content/drive/My Drive/Test/пример.docx
+#/content/drive/My Drive/Test/Дискретная_математика.pdf
